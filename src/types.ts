@@ -18,6 +18,17 @@ export interface ImageFile {
   annotations: Annotation[];
   width: number;
   height: number;
+  sourceVideoId?: string;
+  frameNumber?: number;
+}
+
+export interface VideoFile {
+  id: string;
+  name: string;
+  url: string;
+  duration: number;
+  width: number;
+  height: number;
 }
 
 export interface ClassDefinition {

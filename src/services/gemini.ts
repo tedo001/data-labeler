@@ -1,12 +1,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { BoundingBox, ClassDefinition } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-
 export async function autoLabelImage(
   base64Image: string,
   classes: ClassDefinition[]
 ): Promise<BoundingBox[]> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is missing. Please set it in your environment variables.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   const classNames = classes.map(c => c.name).join(", ");
   const prompt = `Detect the following objects in the image: ${classNames}.
 Return the bounding boxes in JSON format.

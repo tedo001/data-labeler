@@ -23,9 +23,74 @@ export default function App() {
   const [selectedClassId, setSelectedClassId] = useState<number>(0);
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
   const [isAutoLabeling, setIsAutoLabeling] = useState(false);
+  const [isProcessingVideo, setIsProcessingVideo] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const isApiKeyMissing = !process.env.GEMINI_API_KEY;
 
   const selectedImage = images.find(img => img.id === selectedImageId);
+
+  const extractFrames = async (file: File): Promise<ImageFile[]> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file);
+      video.preload = 'auto';
+      
+      video.onloadedmetadata = async () => {
+        const frames: ImageFile[] = [];
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject('Canvas context not found');
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        const duration = video.duration;
+        const frameRate = 1; // Extract 1 frame per second
+        const videoId = Math.random().toString(36).substr(2, 9);
+
+        for (let time = 0; time < duration; time += frameRate) {
+          video.currentTime = time;
+          await new Promise(r => video.onseeked = r);
+          
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const url = canvas.toDataURL('image/jpeg', 0.8);
+          
+          frames.push({
+            id: Math.random().toString(36).substr(2, 9),
+            name: `${file.name}_frame_${Math.floor(time)}.jpg`,
+            url,
+            annotations: [],
+            width: canvas.width,
+            height: canvas.height,
+            sourceVideoId: videoId,
+            frameNumber: Math.floor(time),
+          });
+        }
+        
+        URL.revokeObjectURL(video.src);
+        resolve(frames);
+      };
+
+      video.onerror = () => reject('Error loading video');
+    });
+  };
+
+  const handleUploadVideo = async (file: File) => {
+    setIsProcessingVideo(true);
+    try {
+      const frames = await extractFrames(file);
+      setImages(prev => {
+        const updated = [...prev, ...frames];
+        if (!selectedImageId && frames.length > 0) setSelectedImageId(frames[0].id);
+        return updated;
+      });
+    } catch (error) {
+      console.error("Video processing failed:", error);
+      alert("Failed to process video. Please ensure it's a valid video file.");
+    } finally {
+      setIsProcessingVideo(false);
+    }
+  };
 
   const handleUploadImages = useCallback((files: FileList) => {
     Array.from(files).forEach(file => {
@@ -169,12 +234,19 @@ export default function App() {
         selectedImageId={selectedImageId}
         onSelectImage={setSelectedImageId}
         onUploadImages={handleUploadImages}
+        onUploadVideo={handleUploadVideo}
         onExport={handleExport}
         onAutoLabel={handleAutoLabel}
         isAutoLabeling={isAutoLabeling}
+        isProcessingVideo={isProcessingVideo}
       />
 
       <main className="flex-1 flex flex-col relative">
+        {isApiKeyMissing && (
+          <div className="bg-orange-600 text-white text-[10px] py-1 px-4 text-center font-bold uppercase tracking-widest z-50">
+            Warning: GEMINI_API_KEY is missing. Auto-labeling will not work. Set it in your environment variables.
+          </div>
+        )}
         <div className="h-14 bg-neutral-800 border-b border-neutral-700 flex items-center justify-between px-4 z-10">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 bg-neutral-900 rounded px-3 py-1 border border-neutral-700">

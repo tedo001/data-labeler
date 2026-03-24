@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Download, Image as ImageIcon, CheckCircle, BrainCircuit } from 'lucide-react';
+import { Plus, Trash2, Download, Image as ImageIcon, CheckCircle, BrainCircuit, Video } from 'lucide-react';
 import { ClassDefinition, ImageFile } from '../types';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -18,9 +18,11 @@ interface SidebarProps {
   selectedImageId: string | null;
   onSelectImage: (id: string) => void;
   onUploadImages: (files: FileList) => void;
+  onUploadVideo: (file: File) => void;
   onExport: () => void;
   onAutoLabel: () => void;
   isAutoLabeling: boolean;
+  isProcessingVideo: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -33,9 +35,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   selectedImageId,
   onSelectImage,
   onUploadImages,
+  onUploadVideo,
   onExport,
   onAutoLabel,
   isAutoLabeling,
+  isProcessingVideo,
 }) => {
   const [newClassName, setNewClassName] = React.useState('');
 
@@ -102,17 +106,29 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Images Section */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-400">Images</h2>
-            <label className="cursor-pointer p-1 hover:bg-neutral-700 rounded transition-colors">
-              <Plus className="w-4 h-4" />
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => e.target.files && onUploadImages(e.target.files)}
-              />
-            </label>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-400">Project Data</h2>
+            <div className="flex items-center gap-1">
+              <label className="cursor-pointer p-1.5 hover:bg-neutral-700 rounded transition-colors" title="Upload Images">
+                <ImageIcon className="w-4 h-4" />
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files && onUploadImages(e.target.files)}
+                />
+              </label>
+              <label className="cursor-pointer p-1.5 hover:bg-neutral-700 rounded transition-colors" title="Upload Video">
+                <Video className={cn("w-4 h-4", isProcessingVideo && "animate-pulse text-orange-500")} />
+                <input
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && onUploadVideo(e.target.files[0])}
+                  disabled={isProcessingVideo}
+                />
+              </label>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {images.map((img) => (
