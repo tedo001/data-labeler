@@ -1,0 +1,5 @@
+{
+  "name": "YOLO Data Labeler",
+  "description": "A professional data annotation tool for bounding boxes with manual drawing and AI-powered auto-labeling using Gemini.",
+  "requestFramePermissions": []
+}
